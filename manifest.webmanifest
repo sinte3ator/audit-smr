@@ -1,0 +1,28 @@
+{
+  "id": "./index.html",
+  "name": "Аудит СМР — контроль выполнения работ",
+  "short_name": "Аудит СМР",
+  "description": "Полевой аудит строительно-монтажных работ: Excel-матрица, подтверждение факта прораба, массовые отметки, офлайн-режим.",
+  "lang": "ru",
+  "dir": "ltr",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#2a0725",
+  "theme_color": "#951b81",
+  "categories": ["productivity", "business", "utilities"],
+  "icons": [
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icons/icon-maskable.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Открыть демо-проект",
+      "short_name": "Демо",
+      "description": "Запустить приложение с демонстрационными данными",
+      "url": "./index.html?demo=1",
+      "icons": [{ "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    }
+  ]
+}
