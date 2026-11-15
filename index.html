@@ -3,39 +3,35 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="description" content="Аудит СМР — проверка факта выполнения строительно-монтажных работ по Excel-матрице. Работает офлайн как PWA.">
 <meta name="theme-color" content="#951b81">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Аудит СМР">
+<meta name="description" content="Аудит СМР — проверка факта выполнения работ по Excel-матрице. Работает офлайн.">
 <title>Аудит СМР</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="stylesheet" href="css/styles.css">
 <script src="vendor/tailwindcss.js"></script>
 <script>
-if (window.tailwind) {
-  tailwind.config = {
-    darkMode: 'class',
-    theme: { extend: { colors: {
-      brand: { 50:'#fdf2f9',100:'#fce7f3',200:'#fbcfe8',300:'#f9a8d4',400:'#b83a9e',500:'#951b81',600:'#7a1669',700:'#5f1152',800:'#440c3b',900:'#2a0725' },
-      surface: { 50:'#f4f6f9',100:'#e8ecf1',200:'#d1d9e3',300:'#b0bccb',400:'#8a99af',500:'#6b7a90',600:'#546278',700:'#455063',800:'#313b4a',900:'#1b2637' }
-    } } }
-  };
-}
+if (window.tailwind) tailwind.config = {
+  darkMode: 'class',
+  theme: { extend: { colors: {
+    brand: { 50:'#fdf2f9',100:'#fce7f3',200:'#fbcfe8',300:'#f9a8d4',400:'#b83a9e',500:'#951b81',600:'#7a1669',700:'#5f1152',800:'#440c3b',900:'#2a0725' },
+    surface: { 50:'#f4f6f9',100:'#e8ecf1',200:'#d1d9e3',300:'#b0bccb',400:'#8a99af',500:'#6b7a90',600:'#546278',700:'#455063',800:'#313b4a',900:'#1b2637' }
+  } } }
+};
 </script>
 <script src="vendor/xlsx.full.min.js"></script>
 <script src="vendor/jszip.min.js"></script>
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 </head>
 <body class="h-full bg-surface-50 dark:bg-surface-900 text-surface-900 dark:text-surface-100 no-select">
 
 <div id="splashScreen">
   <svg class="splash-logo" viewBox="0 0 120 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-    <defs><linearGradient id="splashGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#b83a9e"/><stop offset="100%" style="stop-color:#5f1152"/>
-    </linearGradient></defs>
+    <defs><linearGradient id="splashGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#b83a9e"/><stop offset="100%" stop-color="#5f1152"/></linearGradient></defs>
     <text x="60" y="72" font-family="Arial,sans-serif" font-size="56" font-weight="bold" fill="url(#splashGrad)" text-anchor="middle">СМР</text>
   </svg>
   <h1 class="text-3xl font-bold text-white mb-2">Аудит СМР</h1>
@@ -60,89 +56,80 @@ if (window.tailwind) {
     </div>
     <div class="flex flex-wrap items-center justify-center gap-3 mt-5">
       <button onclick="buildDemo()" class="px-5 py-2.5 btn-gradient text-white text-sm font-bold rounded-xl shadow-sm">🏗️ Открыть демо-проект</button>
-      <span class="text-xs text-surface-400 dark:text-surface-500">Приложение работает офлайн после первой загрузки</span>
+      <span class="text-xs text-surface-400 dark:text-surface-500">После первой загрузки работает офлайн</span>
     </div>
     <div id="uploadError" class="hidden mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-sm text-red-700 dark:text-red-400 text-center"></div>
     <input type="file" id="fileInput" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="hidden" onchange="handleFileSelect(event)">
   </div>
 </div>
 
-<!-- ОСНОВНОЕ ПРИЛОЖЕНИЕ -->
+<!-- ПРИЛОЖЕНИЕ -->
 <div id="appScreen" class="hidden h-full flex flex-col">
+
+  <!-- Компактная шапка: одна строка -->
   <header class="bg-white dark:bg-surface-800 border-b border-surface-200 dark:border-surface-700 shadow-sm flex-shrink-0">
-    <div class="px-3 md:px-6 py-2">
-      <div class="flex items-center justify-between gap-2">
-        <div class="flex items-center gap-2 min-w-0 flex-1">
-          <button onclick="openFilePicker()" title="Открыть другой файл" class="flex-shrink-0 inline-flex items-center gap-1.5 px-2.5 py-2 text-xs font-medium text-surface-600 dark:text-surface-300 bg-surface-100 dark:bg-surface-700 hover:bg-surface-200 dark:hover:bg-surface-600 rounded-lg transition-colors">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
-            <span class="hidden sm:inline">Открыть</span>
-          </button>
-          <div class="h-5 w-px bg-surface-200 dark:bg-surface-600 flex-shrink-0 hidden sm:block"></div>
-          <span id="fileName" class="text-xs md:text-sm font-semibold text-surface-900 dark:text-white truncate max-w-[120px] sm:max-w-xs">—</span>
-          <button onclick="undoLastChange()" id="undoBtn" title="Отменить (Ctrl+Z)" class="flex-shrink-0 inline-flex items-center px-2 py-2 text-xs font-medium text-surface-600 dark:text-surface-300 bg-surface-100 dark:bg-surface-700 hover:bg-surface-200 dark:hover:bg-surface-600 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed" disabled>
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3"/></svg>
-          </button>
-          <button onclick="saveToFile()" id="saveBtn" title="Сохранить в файл (Ctrl+S). Если браузер не умеет перезаписывать файл — скачает копию." class="flex-shrink-0 inline-flex items-center gap-1 px-3 py-2 text-xs font-semibold text-white btn-gradient rounded-lg transition-all shadow-sm">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            <span class="hidden sm:inline">Сохранить</span>
-          </button>
-          <button onclick="exportToFile()" id="exportBtn" title="Скачать копию файла" class="flex-shrink-0 inline-flex items-center px-2 py-2 text-xs font-medium text-white btn-brand rounded-lg transition-colors shadow-sm">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
-          </button>
-          <button onclick="shareFile()" id="shareBtn" title="Поделиться файлом" class="flex-shrink-0 inline-flex items-center px-2 py-2 text-xs font-medium text-white btn-brand rounded-lg transition-colors shadow-sm">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z"/></svg>
-          </button>
-        </div>
-        <div class="flex items-center gap-1.5 flex-shrink-0">
-          <span id="netStatus" class="hidden sm:inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[11px] font-medium bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400">
-            <span id="netDot" class="w-1.5 h-1.5 rounded-full bg-green-500"></span><span id="netText">Онлайн</span>
-          </span>
-          <button id="installBtn" onclick="promptInstall()" class="hidden items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-white btn-brand rounded-lg" title="Установить приложение">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16"/></svg>
-            <span class="hidden md:inline">Установить</span>
-          </button>
-          <button id="updateBtn" onclick="applyUpdate()" class="hidden items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-white bg-green-600 hover:bg-green-700 rounded-lg" title="Доступно обновление">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5M20 20v-5h-5M4 9a8 8 0 0114-3m2 9a8 8 0 01-14 3"/></svg>
-            <span class="hidden md:inline">Обновить</span>
-          </button>
-          <button onclick="toggleTheme()" class="p-2 rounded-lg text-surface-400 hover:text-surface-600 dark:hover:text-surface-200 hover:bg-surface-100 dark:hover:bg-surface-700 transition-colors" title="Сменить тему">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"/></svg>
-          </button>
-        </div>
-      </div>
-      <div id="summaryBar" class="hidden mt-2 flex items-center gap-3 text-xs font-medium text-surface-600 dark:text-surface-300 overflow-x-auto">
-        <span id="summaryTotal" class="whitespace-nowrap cursor-pointer hover:text-brand-600 dark:hover:text-brand-400" onclick="filterBySummary('all')">📊 0 работ</span>
-        <span id="summaryDone" class="whitespace-nowrap cursor-pointer hover:text-green-600 dark:hover:text-green-400" onclick="filterBySummary('done')">✓ 0</span>
-        <span id="summaryMismatch" class="whitespace-nowrap cursor-pointer hover:text-amber-600 dark:hover:text-amber-400" onclick="filterBySummary('mismatch')">⚠ 0</span>
-      </div>
+    <div class="px-2 md:px-4 py-1.5 flex items-center gap-1.5">
+      <button id="menuBtn" onclick="openDrawer()" class="hdr-btn lg:hidden" title="Меню" aria-label="Открыть меню">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <button onclick="openFilePicker()" class="hdr-btn hidden lg:inline-flex" title="Открыть файл">
+        <svg class="w-4.5 h-4.5 w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>
+      </button>
+      <span id="fileName" class="flex-1 min-w-0 truncate text-xs md:text-sm font-semibold text-surface-900 dark:text-white px-1">—</span>
+
+      <button id="undoBtn" onclick="undoLastChange()" class="hdr-btn" disabled title="Отменить (Ctrl+Z)">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3"/></svg>
+      </button>
+
+      <button id="mismatchBtn" onclick="toggleMismatchFilter()" class="mismatch-btn" aria-pressed="false" title="Показать только работы с расхождениями">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.216 3.374 1.948 3.374h14.71c1.732 0 2.814-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>
+        <span id="mismatchCount">0</span>
+      </button>
+
+      <button onclick="exportToFile()" class="hdr-btn hidden lg:inline-flex" title="Скачать копию файла">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+      </button>
+      <button onclick="shareFile()" class="hdr-btn hidden lg:inline-flex" title="Поделиться файлом">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z"/></svg>
+      </button>
+
+      <button id="saveBtn" onclick="saveToFile()" class="hdr-btn hdr-save relative" title="Сохранить (Ctrl+S)">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <span class="hidden md:inline text-xs font-bold">Сохранить</span>
+        <span id="saveBadge" class="save-badge hidden">0</span>
+      </button>
+      <button onclick="toggleTheme()" class="hdr-btn" title="Сменить тему">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"/></svg>
+      </button>
     </div>
   </header>
 
+  <!-- Фильтры -->
   <div class="filter-panel-gradient flex-shrink-0">
-    <div class="px-3 md:px-6 py-2">
-      <button onclick="toggleFilters()" class="md:hidden w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-white bg-white/10 rounded-lg">
+    <div class="px-2 md:px-4 py-1.5">
+      <button onclick="toggleFilters()" class="filters-toggle md:hidden w-full flex items-center justify-between text-white bg-white/10 rounded-lg">
         <span>🔍 Фильтры</span>
         <svg id="filtersArrow" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
       </button>
-      <div id="filtersContent" class="flex flex-wrap items-center gap-2 mt-2 md:mt-0 filters-collapsible md:!max-h-none">
-        <div class="flex items-center gap-2 flex-1 min-w-[140px]">
+      <div id="filtersContent" class="filters-collapsible flex flex-wrap items-center gap-2 mt-1.5 md:mt-0 md:!max-h-none">
+        <div class="filter-row flex items-center gap-2 flex-1 min-w-[150px]">
           <label class="text-xs font-semibold text-white uppercase tracking-wide whitespace-nowrap">Лист:</label>
-          <select id="filterSheet" class="filter-select flex-1 px-3 py-2 text-sm border border-white/20 rounded-lg bg-white/90 dark:bg-surface-700/90 text-surface-900 dark:text-white focus:ring-2 focus:ring-white outline-none min-h-[44px]"></select>
+          <select id="filterSheet" class="filter-select flex-1 min-w-0 px-3 py-2 text-sm border border-white/20 rounded-lg bg-white/90 dark:bg-surface-700/90 text-surface-900 dark:text-white focus:ring-2 focus:ring-white outline-none"></select>
         </div>
-        <div class="flex items-center gap-2 flex-1 min-w-[140px]">
+        <div class="filter-row flex items-center gap-2 flex-1 min-w-[150px]">
           <label class="text-xs font-semibold text-white uppercase tracking-wide whitespace-nowrap">Секция:</label>
-          <select id="filterSection" class="filter-select flex-1 px-3 py-2 text-sm border border-white/20 rounded-lg bg-white/90 dark:bg-surface-700/90 text-surface-900 dark:text-white focus:ring-2 focus:ring-white outline-none min-h-[44px]"></select>
+          <select id="filterSection" class="filter-select flex-1 min-w-0 px-3 py-2 text-sm border border-white/20 rounded-lg bg-white/90 dark:bg-surface-700/90 text-surface-900 dark:text-white focus:ring-2 focus:ring-white outline-none"></select>
         </div>
-        <div class="flex items-center gap-2 flex-1 min-w-[130px]">
+        <div class="filter-row flex items-center gap-2 flex-1 min-w-[140px]">
           <label class="text-xs font-semibold text-white uppercase tracking-wide whitespace-nowrap">Этаж:</label>
-          <select id="filterFloor" class="filter-select flex-1 px-3 py-2 text-sm border border-white/20 rounded-lg bg-white/90 dark:bg-surface-700/90 text-surface-900 dark:text-white focus:ring-2 focus:ring-white outline-none min-h-[44px]"></select>
+          <select id="filterFloor" class="filter-select flex-1 min-w-0 px-3 py-2 text-sm border border-white/20 rounded-lg bg-white/90 dark:bg-surface-700/90 text-surface-900 dark:text-white focus:ring-2 focus:ring-white outline-none"></select>
         </div>
-        <div class="flex items-center gap-2 flex-1 min-w-[140px]">
+        <div class="filter-row flex items-center gap-2 flex-1 min-w-[150px]">
           <label class="text-xs font-semibold text-white uppercase tracking-wide whitespace-nowrap">Работа:</label>
-          <div class="multiselect flex-1" id="filterWorkMs">
+          <div class="multiselect flex-1 min-w-0" id="filterWorkMs">
             <button type="button" class="multiselect-toggle" onclick="toggleMultiselect('filterWorkMs', event)">
               <span class="multiselect-label">Все работы</span>
-              <svg class="w-4 h-4 ml-auto" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+              <svg class="w-4 h-4 ml-auto shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
             </button>
             <div class="multiselect-dropdown">
               <div class="multiselect-search"><input type="text" id="filterWorkSearch" placeholder="Поиск работы..." oninput="filterWorksDropdown(this.value)" onclick="event.stopPropagation()"></div>
@@ -155,7 +142,7 @@ if (window.tailwind) {
             </div>
           </div>
         </div>
-        <label class="inline-flex items-center gap-2 cursor-pointer select-none bg-white/10 px-3 py-2 rounded-lg min-h-[44px]">
+        <label class="filter-row inline-flex items-center gap-2 cursor-pointer select-none bg-white/10 px-3 py-2 rounded-lg">
           <input type="checkbox" id="hideAccepted" class="w-5 h-5 rounded border-white/30 text-brand-600 focus:ring-white">
           <span class="text-sm font-medium text-white whitespace-nowrap">Скрыть выполненные и пустые</span>
         </label>
@@ -163,6 +150,7 @@ if (window.tailwind) {
     </div>
   </div>
 
+  <!-- Контент -->
   <div class="flex-1 flex flex-col lg:flex-row overflow-hidden">
     <aside class="desktop-sidebar w-full lg:w-80 xl:w-96 bg-white dark:bg-surface-800 border-b lg:border-b-0 lg:border-r border-surface-200 dark:border-surface-700 flex-shrink-0 overflow-y-auto">
       <div class="p-4 lg:p-5">
@@ -179,46 +167,34 @@ if (window.tailwind) {
             <div class="col-span-2"><span class="text-surface-500 dark:text-surface-400">Работа:</span><div id="selWork" class="mt-0.5 font-medium text-surface-900 dark:text-white leading-snug">—</div></div>
           </div>
           <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">Мой факт</label>
-              <div id="myValueDisplay" class="px-3 py-2 text-base font-bold font-mono bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-600 rounded-lg text-center text-surface-800 dark:text-surface-100">—</div>
-            </div>
-            <div>
-              <label class="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">Прораб</label>
-              <div id="foremanValueDisplay" class="px-3 py-2 text-base font-bold font-mono bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-600 rounded-lg text-center text-surface-800 dark:text-surface-100">—</div>
-            </div>
+            <div><label class="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">Мой факт</label><div id="myValueDisplay" class="px-3 py-2 text-base font-bold font-mono bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-600 rounded-lg text-center">—</div></div>
+            <div><label class="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">Прораб</label><div id="foremanValueDisplay" class="px-3 py-2 text-base font-bold font-mono bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-600 rounded-lg text-center">—</div></div>
           </div>
         </div>
         <div id="lockedWarning" class="hidden mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl text-sm text-amber-800 dark:text-amber-300 flex items-start gap-2">
           <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.216 3.374 1.948 3.374h14.71c1.732 0 2.814-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>
           <span>Нет отметки прораба — ввод невозможен</span>
         </div>
-        <button onclick="acceptForemanValue()" id="acceptBtn" class="w-full flex items-center justify-center gap-2 px-4 py-3 btn-gradient text-white text-sm font-bold rounded-xl shadow-sm transition-all duration-150 mb-4">
+        <button onclick="acceptForemanValue()" id="acceptBtn" class="w-full flex items-center justify-center gap-2 px-4 py-3 btn-gradient text-white text-sm font-bold rounded-xl shadow-sm mb-4">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
           Факт верный
         </button>
         <div class="mb-4">
           <label for="manualValue" class="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">Ввести значение (0–100)</label>
           <div class="flex gap-2">
-            <input type="number" id="manualValue" min="0" max="100" step="1" placeholder="0 — 100" inputmode="numeric" class="flex-1 px-3 py-2 text-sm border border-surface-300 dark:border-surface-600 rounded-xl bg-surface-50 dark:bg-surface-700 text-surface-900 dark:text-white placeholder-surface-400 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all">
-            <button onclick="submitManualValue()" id="submitBtn" class="px-4 py-2 btn-brand text-white text-sm font-bold rounded-xl transition-all duration-150 whitespace-nowrap">Внести</button>
+            <input type="number" id="manualValue" min="0" max="100" step="1" placeholder="0 — 100" inputmode="numeric" class="flex-1 px-3 py-2 text-sm border border-surface-300 dark:border-surface-600 rounded-xl bg-surface-50 dark:bg-surface-700 text-surface-900 dark:text-white focus:ring-2 focus:ring-brand-500 outline-none">
+            <button onclick="submitManualValue()" id="submitBtn" class="px-4 py-2 btn-brand text-white text-sm font-bold rounded-xl">Внести</button>
           </div>
         </div>
-        <div id="formStatus" class="hidden mt-3 p-3 rounded-xl text-sm font-medium transition-all"></div>
+        <div id="formStatus" class="hidden mt-3 p-3 rounded-xl text-sm font-medium"></div>
         <div class="pt-4 mt-4 border-t border-surface-200 dark:border-surface-700">
           <p class="text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wide mb-3">Массовое подтверждение</p>
           <div class="mb-4">
             <label class="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">По этажам</label>
             <div class="multiselect" id="msFloors">
-              <button type="button" class="multiselect-toggle" onclick="toggleMultiselect('msFloors', event)">
-                <span class="multiselect-label">Выбрать этажи (0)</span>
-                <svg class="w-4 h-4 ml-auto" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-              </button>
+              <button type="button" class="multiselect-toggle" onclick="toggleMultiselect('msFloors', event)"><span class="multiselect-label">Выбрать этажи (0)</span><svg class="w-4 h-4 ml-auto" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg></button>
               <div class="multiselect-dropdown">
-                <div class="multiselect-actions">
-                  <button type="button" onclick="multiselectAll('msFloors', true, event)" class="text-xs text-brand-600 dark:text-brand-400 font-medium">Все</button>
-                  <button type="button" onclick="multiselectAll('msFloors', false, event)" class="text-xs text-brand-600 dark:text-brand-400 font-medium">Снять</button>
-                </div>
+                <div class="multiselect-actions"><button type="button" onclick="multiselectAll('msFloors', true, event)" class="text-xs text-brand-600 font-medium">Все</button><button type="button" onclick="multiselectAll('msFloors', false, event)" class="text-xs text-brand-600 font-medium">Снять</button></div>
                 <div class="multiselect-options" id="msFloorsOptions"></div>
               </div>
             </div>
@@ -227,16 +203,10 @@ if (window.tailwind) {
           <div>
             <label class="block text-xs font-medium text-surface-500 dark:text-surface-400 mb-1">По работам</label>
             <div class="multiselect" id="msWorks">
-              <button type="button" class="multiselect-toggle" onclick="toggleMultiselect('msWorks', event)">
-                <span class="multiselect-label">Выбрать работы (0)</span>
-                <svg class="w-4 h-4 ml-auto" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-              </button>
+              <button type="button" class="multiselect-toggle" onclick="toggleMultiselect('msWorks', event)"><span class="multiselect-label">Выбрать работы (0)</span><svg class="w-4 h-4 ml-auto" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg></button>
               <div class="multiselect-dropdown">
                 <div class="multiselect-search"><input type="text" id="msWorksSearch" placeholder="Поиск работы..." oninput="filterMsWorks('msWorks', this.value)" onclick="event.stopPropagation()"></div>
-                <div class="multiselect-actions">
-                  <button type="button" onclick="multiselectAll('msWorks', true, event)" class="text-xs text-brand-600 dark:text-brand-400 font-medium">Все</button>
-                  <button type="button" onclick="multiselectAll('msWorks', false, event)" class="text-xs text-brand-600 dark:text-brand-400 font-medium">Снять</button>
-                </div>
+                <div class="multiselect-actions"><button type="button" onclick="multiselectAll('msWorks', true, event)" class="text-xs text-brand-600 font-medium">Все</button><button type="button" onclick="multiselectAll('msWorks', false, event)" class="text-xs text-brand-600 font-medium">Снять</button></div>
                 <div class="multiselect-options" id="msWorksOptions"></div>
               </div>
             </div>
@@ -248,55 +218,107 @@ if (window.tailwind) {
 
     <main class="flex-1 flex flex-col overflow-hidden bg-surface-50 dark:bg-surface-900">
       <div class="flex-1 overflow-auto p-2 md:p-4 lg:p-6">
-        <div id="tablePlaceholder" class="flex flex-col items-center justify-center h-full text-surface-400 dark:text-surface-500">
-          <p class="text-base font-medium">Загрузите файл для просмотра матрицы</p>
-        </div>
+        <div id="tablePlaceholder" class="flex flex-col items-center justify-center h-full text-surface-400 dark:text-surface-500"><p class="text-base font-medium">Загрузите файл для просмотра матрицы</p></div>
         <div id="tableContainer" class="hidden">
           <div class="bg-white dark:bg-surface-800 rounded-2xl border border-surface-200 dark:border-surface-700 card-shadow overflow-hidden">
-            <div class="overflow-auto matrix-scroll" style="max-height:calc(100dvh - 220px);">
+            <div class="overflow-auto matrix-scroll" style="max-height:calc(100dvh - 150px);">
               <table id="matrixTable" class="w-full text-sm border-collapse matrix-table">
                 <thead id="matrixHead" class="sticky top-0 z-20"></thead>
                 <tbody id="matrixBody"></tbody>
               </table>
             </div>
           </div>
+          <p class="lg:hidden text-[11px] text-surface-400 dark:text-surface-500 mt-2 px-1">Подсказка: долгое нажатие на ячейку — сразу «Факт верный».</p>
         </div>
       </div>
     </main>
   </div>
 
-  <button onclick="openBottomSheet()" class="fab" aria-label="Ввести факт">
-    <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/></svg>
-  </button>
-  <div id="bottomSheetBackdrop" class="bottom-sheet-backdrop" onclick="closeBottomSheet()"></div>
-  <div id="bottomSheet" class="bottom-sheet">
-    <div class="bottom-sheet-handle"></div>
-    <div class="px-4 pb-6" id="bottomSheetContent"></div>
-  </div>
+  <!-- БОКОВАЯ ПАНЕЛЬ (телефон) -->
+  <div id="drawerBackdrop" class="drawer-backdrop" onclick="closeDrawer()"></div>
+  <aside id="sideDrawer" class="side-drawer" aria-label="Меню приложения">
+    <div class="drawer-head">
+      <span class="text-base font-bold text-surface-900 dark:text-white">Меню</span>
+      <button onclick="closeDrawer()" class="hdr-btn" aria-label="Закрыть меню"><svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
+    </div>
+    <div class="drawer-body">
+      <p class="drawer-caption">Файл</p>
+      <button onclick="closeDrawer();openFilePicker()" class="drawer-action"><svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/></svg>Открыть файл</button>
+      <button onclick="exportToFile()" class="drawer-action"><svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>Скачать копию</button>
+      <button onclick="shareFile()" class="drawer-action"><svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z"/></svg>Поделиться</button>
 
-  <div id="warningModal" class="modal-backdrop">
-    <div class="modal p-6">
-      <h3 class="text-lg font-bold text-surface-900 dark:text-white mb-3">Несохранённые изменения</h3>
-      <p class="text-sm text-surface-600 dark:text-surface-300 mb-6">Есть несохранённые изменения. Что вы хотите сделать?</p>
-      <div class="flex flex-col gap-2">
-        <button onclick="saveAndExit()" class="w-full px-4 py-3 btn-gradient text-white font-semibold rounded-xl">Сохранить и продолжить</button>
-        <button onclick="exitWithoutSaving()" class="w-full px-4 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl">Выйти без сохранения</button>
-        <button onclick="closeWarningModal()" class="w-full px-4 py-3 bg-surface-200 dark:bg-surface-700 hover:bg-surface-300 dark:hover:bg-surface-600 text-surface-900 dark:text-white font-semibold rounded-xl">Отмена</button>
+      <p class="drawer-caption mt-5">Массовое подтверждение</p>
+      <div class="drawer-block">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-sm font-semibold text-surface-800 dark:text-surface-100">По этажам</span>
+          <span class="flex gap-3"><button onclick="drawerAll('floors',true)" class="text-xs text-brand-600 dark:text-brand-400 font-bold">Все</button><button onclick="drawerAll('floors',false)" class="text-xs text-brand-600 dark:text-brand-400 font-bold">Снять</button></span>
+        </div>
+        <div id="drawerFloorsList" class="mass-list"></div>
+        <button id="drawerMassFloorsBtn" onclick="applyForemanByFloors()" class="w-full mt-2 px-3 py-3 btn-brand text-white text-sm font-bold rounded-xl">✓ Факт по этажам верный</button>
+        <p id="drawerFloorsHint" class="text-[11px] text-surface-400 mt-1.5 text-center"></p>
       </div>
+      <div class="drawer-block mt-3">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-sm font-semibold text-surface-800 dark:text-surface-100">По работам</span>
+          <span class="flex gap-3"><button onclick="drawerAll('works',true)" class="text-xs text-brand-600 dark:text-brand-400 font-bold">Все</button><button onclick="drawerAll('works',false)" class="text-xs text-brand-600 dark:text-brand-400 font-bold">Снять</button></span>
+        </div>
+        <input type="text" id="drawerWorksSearch" placeholder="Поиск работы..." oninput="filterDrawerWorks(this.value)" class="w-full mb-2 px-3 py-2 text-sm border border-surface-300 dark:border-surface-600 rounded-lg bg-surface-50 dark:bg-surface-700 text-surface-900 dark:text-white outline-none focus:ring-2 focus:ring-brand-500">
+        <div id="drawerWorksList" class="mass-list"></div>
+        <button id="drawerMassWorksBtn" onclick="applyForemanByWorks()" class="w-full mt-2 px-3 py-3 btn-brand text-white text-sm font-bold rounded-xl">✓ Факт по работам верный</button>
+        <p id="drawerWorksHint" class="text-[11px] text-surface-400 mt-1.5 text-center"></p>
+      </div>
+
+      <p class="drawer-caption mt-5">Приложение</p>
+      <button id="installBtn" onclick="promptInstall()" class="drawer-action hidden"><svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16"/></svg>Установить приложение</button>
+      <button id="updateBtn" onclick="applyUpdate()" class="drawer-action drawer-update hidden"><svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5M20 20v-5h-5M4 9a8 8 0 0114-3m2 9a8 8 0 01-14 3"/></svg>Обновить приложение</button>
+      <div class="flex items-center justify-between mt-3 text-xs text-surface-400">
+        <span>Сеть: <span id="netChip" class="font-semibold">—</span></span>
+        <span class="font-mono">v1.2.0</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Нижняя шторка: ввод факта -->
+  <div id="bottomSheetBackdrop" class="bottom-sheet-backdrop" onclick="closeBottomSheet()"></div>
+  <div id="bottomSheet" class="bottom-sheet"><div class="bottom-sheet-handle"></div><div class="px-4 pb-6" id="bottomSheetContent"></div></div>
+
+  <!-- Нижняя шторка: выбор работ -->
+  <div id="workSheetBackdrop" class="bottom-sheet-backdrop work-sheet-layer" onclick="closeWorkSheet()"></div>
+  <div id="workSheet" class="bottom-sheet work-sheet-layer">
+    <div class="bottom-sheet-handle"></div>
+    <div class="px-4 pb-5">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-lg font-bold text-surface-900 dark:text-white">Выбор работ <span id="workSheetCount" class="text-sm font-medium text-surface-400"></span></h2>
+        <button onclick="closeWorkSheet()" class="hdr-btn"><svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/></svg></button>
+      </div>
+      <input type="text" id="workSheetSearch" placeholder="Поиск работы..." oninput="filterWorkSheet(this.value)" class="w-full mb-2 px-3 py-2.5 text-sm border border-surface-300 dark:border-surface-600 rounded-xl bg-surface-50 dark:bg-surface-700 text-surface-900 dark:text-white outline-none focus:ring-2 focus:ring-brand-500">
+      <div class="flex gap-4 mb-2">
+        <button onclick="workSheetAll(true)" class="text-sm text-brand-600 dark:text-brand-400 font-bold">Выбрать все</button>
+        <button onclick="workSheetAll(false)" class="text-sm text-brand-600 dark:text-brand-400 font-bold">Снять все</button>
+      </div>
+      <div id="workSheetOptions" class="work-sheet-options"></div>
+      <button onclick="closeWorkSheet()" class="w-full mt-3 px-4 py-3 btn-gradient text-white font-bold rounded-xl">Готово</button>
     </div>
   </div>
 
+  <!-- Модалки -->
+  <div id="warningModal" class="modal-backdrop"><div class="modal p-6">
+    <h3 class="text-lg font-bold text-surface-900 dark:text-white mb-3">Несохранённые изменения</h3>
+    <p class="text-sm text-surface-600 dark:text-surface-300 mb-6">Есть несохранённые изменения. Что вы хотите сделать?</p>
+    <div class="flex flex-col gap-2">
+      <button onclick="saveAndExit()" class="w-full px-4 py-3 btn-gradient text-white font-semibold rounded-xl">Сохранить и продолжить</button>
+      <button onclick="exitWithoutSaving()" class="w-full px-4 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl">Выйти без сохранения</button>
+      <button onclick="closeWarningModal()" class="w-full px-4 py-3 bg-surface-200 dark:bg-surface-700 text-surface-900 dark:text-white font-semibold rounded-xl">Отмена</button>
+    </div>
+  </div></div>
   <input type="file" id="fileInputSecondary" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" class="hidden" onchange="handleFileSelect(event)">
 </div>
 
-<!-- УНИВЕРСАЛЬНАЯ МОДАЛКА -->
-<div id="appModal" class="modal-backdrop">
-  <div class="modal p-6">
-    <h3 id="appModalTitle" class="text-lg font-bold text-surface-900 dark:text-white mb-3"></h3>
-    <p id="appModalMessage" class="text-sm text-surface-600 dark:text-surface-300 mb-6"></p>
-    <div id="appModalButtons" class="flex flex-col gap-2"></div>
-  </div>
-</div>
+<div id="appModal" class="modal-backdrop"><div class="modal p-6">
+  <h3 id="appModalTitle" class="text-lg font-bold text-surface-900 dark:text-white mb-3"></h3>
+  <p id="appModalMessage" class="text-sm text-surface-600 dark:text-surface-300 mb-6"></p>
+  <div id="appModalButtons" class="flex flex-col gap-2"></div>
+</div></div>
 
 <script src="js/app.js"></script>
 <script src="js/pwa.js" defer></script>
